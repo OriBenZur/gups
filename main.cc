@@ -197,9 +197,6 @@ int main(int argc, char* argv[]) {
         array[i] = i;
     }
 
-    // Start time measurement
-    auto start = std::chrono::steady_clock::now();
-
     /* Calculate the initial seeds only once for all iterations */
     // constexpr std::size_t hardware_destructive_interference_size = 64;
     uint64_t seeds[num_parallel_accesses];
@@ -207,12 +204,17 @@ int main(int argc, char* argv[]) {
         seeds[j] = random_seed((num_updates / num_parallel_accesses) * j);
     }
 
+
+
     /* Iterate over the original HPCC loop */
     for (uint64_t k = 0; k < num_iterations; k++) {
         aligned_int random_index[num_parallel_accesses];
         for (uint64_t i = 0; i < num_parallel_accesses; i++) {
             random_index[i].x = seeds[i];
         }
+
+        // Start time measurement
+        auto start = std::chrono::steady_clock::now();
 
         /* Perform updates to main table */
         for (uint64_t i = 0; i < num_updates / num_parallel_accesses; i++) {
@@ -224,17 +226,19 @@ int main(int argc, char* argv[]) {
                 random_index[j].x = r;
             }
         }
+
+        // Stop time measurement
+        auto stop = std::chrono::steady_clock::now();
+
+        auto microseconds_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        double seconds_elapsed = 1e-6 * microseconds_elapsed.count();
+        double giga_updates = 1e-9 * num_updates;
+        double gups = giga_updates / seconds_elapsed;
+        std::cout << "giga updates = " << giga_updates << "\n";
+        std::cout << "seconds elapsed = " << seconds_elapsed << "\n";
+        std::cout << "GUPS (Giga updates per second) = " << gups << "\n";
     }
 
-    // Stop time measurement
-    auto stop = std::chrono::steady_clock::now();
-    auto microseconds_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    double seconds_elapsed = 1e-6 * microseconds_elapsed.count();
-    double giga_updates = 1e-9 * num_iterations * num_updates;
-    double gups = giga_updates / seconds_elapsed;
-    std::cout << "giga updates = " << giga_updates << "\n";
-    std::cout << "seconds elapsed = " << seconds_elapsed << "\n";
-    std::cout << "GUPS (Giga updates per second) = " << gups << "\n";
 
     if (has_to_verify) {
         bool success = verify(array, array_length, num_updates);

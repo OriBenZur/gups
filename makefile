@@ -5,10 +5,10 @@ SHELL := /bin/bash
 # invoke recipes as if the shell had been passed the -e flag: the first failing command in a recipe will cause the recipe to fail immediately
 .POSIX:
 
-##### Constants #####
+##### Constants ##### 170 375...
 
 CXX := g++
-CXXFLAGS := -Wall -Werror -Wextra -pedantic -O3 -std=c++11 -fopenmp
+CXXFLAGS := -Wall -Werror -Wextra -pedantic -O0 -std=c++11 -fopenmp
 ifdef DEBUG
 	CXXFLAGS += -g
 endif
