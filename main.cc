@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
 
     uint64_t array_length = 1ul<<log2_array_length;
     /* Number of updates to table (suggested: 4x number of table entries) */
-    uint64_t num_updates = array_length<<2ul; /* 4x the array size */
+    uint64_t num_updates = array_length * (uint64_t)4 ; /* 4x the array size */ /* Ori: 1x the array size! */
     const uint64_t num_parallel_accesses = 128;
     uint64_t num_iterations = 1ul<<log2_iterations;
 
@@ -217,14 +217,14 @@ int main(int argc, char* argv[]) {
         auto start = std::chrono::steady_clock::now();
 
         /* Perform updates to main table */
-        for (uint64_t i = 0; i < num_updates / num_parallel_accesses; i++) {
-#pragma omp parallel for
-            for (uint64_t j = 0; j < num_parallel_accesses; j++) {
-                uint64_t r = random_index[j].x;
-                r = (r << 1) ^ ((int64_t) r < 0 ? POLY : 0);
-                array[r & (array_length-1)] ^= r;
-                random_index[j].x = r;
-            }
+        uint64_t jj = 0;
+        #pragma omp parallel for firstprivate(jj)
+        for (uint64_t i = 0; i < num_updates; i++) {
+            uint64_t r = random_index[jj].x;
+            r = (r << 1) ^ ((int64_t) r < 0 ? POLY : 0);
+            array[r & (array_length-1)] ^= r;
+            random_index[jj].x = r;
+            jj = (jj+1) % num_parallel_accesses;
         }
 
         // Stop time measurement
@@ -250,4 +250,3 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
-
